@@ -1,3 +1,3 @@
 @echo off
-start python C:\Users\Magic_chen\Desktop\微信爬虫系统\start.py
+start python E:\毕业设计代码发行版\personal-wechatplus\start.py
 exit
