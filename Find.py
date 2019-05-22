@@ -2,7 +2,9 @@ import pandas as pd
 import pickle
 import time
 
-
+def readsth():
+    with open('./data/admin','rb') as file:
+        return pickle.load(file)
 def aiYzm(filename):
     '''
     :param filename: 表示图片的文件路径
