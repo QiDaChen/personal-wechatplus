@@ -150,26 +150,22 @@ class Friends():
         with open('./data/好友信息','rb',) as file2:
             self.df =pickle.load(file2)
     def isvip(self,fromusername):
-        username = self.df[self.df['Remark'].isin(list(message.keys()))]['UserName'].values
-        if fromusername in username:
-            return True
-        else:
-            return False
+        df = self.df[self.df['UserName'] == fromusername]
+        flag = False
+        if df.index[0] in [x[:-3] for x in message]:
+            flag = True
+        return flag
 
-    def readvip():
-        pass
 class Teacher():
     def __init__(self,username):
         self.username = username
         with open('./data/好友信息','rb',) as file2:
             self.df =pickle.load(file2)
-        self.name = self.df[self.df['UserName']==self.username].iloc[0].Remark
-        self.admin = message[self.name]
+        self.name = self.df[self.df['UserName']==self.username].index[0]
+        for i in message:
+            if self.name in i:
+                self.admin = message[i]
         print(self.name)
-    def getmessage(self,flag):
-        if self.msg_1['Text'] =='小小奇':
-            flag = True
-        return flag
     def getcookies(self):
         '''
            验证码图片的微信发送
@@ -196,9 +192,38 @@ def logdata(user):
     return timec
 nomalflag = {}
 userflag = {}
+class newTeacher():
+    def __init__(self,user):
+        self.id = user.username
+        self.name = self.getname()
+        self.num = self.getnum()
+    def getname(self):
+        df = pd.read_pickle('./data/好友信息')
+        return  df[df['UserName']==self.id].index[0]
+    def getnum(self):
+        df = pd.read_pickle('./data/admin')
+        if len(df)<10:
+            result = '00'+str(len(df))
+        elif len(df)<100:
+            result = '0'+str(len(df))
+        elif len(df) < 1000:
+            result = str(len(df))
+        return result
+
+        return len(df)
+    def savemsg(self):
+        a = pd.read_pickle('./data/admin')
+        a[self.name+str(self.num)] = [self.admin,self.password]
+        with open('./data/admin','wb') as file:
+            pickle.dump(a,file)
+            print('信息录入成功')
+
+
 @itchat.msg_register(itchat.content.TEXT)
 def text(msg):
-    global userflag,timec,nomalflag
+    global userflag,timec,nomalflag,message
+    message = readsth()
+    # print(message)
     friend = Friends()
     '''控制台的函数控制
        信息的持续接收
@@ -208,16 +233,18 @@ def text(msg):
     if friend.isvip(fromusername):
         user = Teacher(fromusername)
         user.msg_1 = msg
-        if user.msg_1['Text'] in ['start','小小奇','开始']:
+        if user.msg_1['Text'] in ['start','开始']:
             itchat.send_msg('以下内容是自动回复,发送“exit”或者“退出”退出退出自动回复',user.username)
             userflag[user.username] = True
-        elif user.msg_1['Text'] in ['end','exit','退出']:
+        elif user.msg_1['Text'] in ['exit','退出']:
             userflag[user.username] = False
-        if len(userflag):
-            if userflag[user.username]:
-                itchat.send_msg(jqr(user.msg_1['Text'])+".",user.username)
-
-        if len(userflag)==0 or userflag[user.username]==False:
+        try:
+            print(userflag[user.username])
+        except:
+            userflag[user.username] = False
+        if userflag[user.username]:
+            itchat.send_msg(jqr(user.msg_1['Text'])+".",user.username)
+        else:
             if user.msg_1['Text'] == '获取数据':
                 itchat.send_msg('请耐心等候，小爬虫正在快吗加鞭获取数据', user.username)
                 shot_tm = user.getcookies()
@@ -277,7 +304,7 @@ def text(msg):
                 itchat.send_msg(day, user.username)
                 itchat.send_msg(week, user.username)
             elif '备课表' in user.msg_1['Text']:
-                itchat.send_file('./data/' + user.name[-4:] + 'alldream.xlsx',user.username)
+                itchat.send_file('./data/' +user.username[-5:]+ '_alldream.xlsx',user.username)
     else:
         nomal = Nomal(msg['FromUserName'])
         print('创建聊天')
@@ -289,6 +316,25 @@ def text(msg):
             itchat.send_image('./image/nomal.png',nomal.username)
         elif nomal.msg['Text'] in ['end','exit','退出']:
             nomalflag[nomal.username] = False
+        elif nomal.msg['Text'] == '注册傲梦讲师':
+            global teacher
+            teacher = newTeacher(nomal)
+            itchat.send_msg('{}你好，现在需要录入你的傲梦网站的账号密码，请严格按照以下格式发送账号和密码（用一个空格隔开,前后不要加空格）如：”19091956102 12345“'.format(teacher.name),nomal.username)
+
+        try:
+            if nomal.username == teacher.id:
+                print(nomal.msg['Text'])
+                if len(nomal.msg['Text'].split(' '))==2 and len(nomal.msg['Text'].split(' ')[0])==11:
+                    print(nomal.msg['Text'].split(' ')[0])
+                    teacher.admin = nomal.msg['Text'].split(' ')[0]
+                    teacher.password = nomal.msg['Text'].split(' ')[1]
+                    itchat.send_msg('你确认账号密码无误？有误的话请重新注册无误请回复：信息无误请录入',nomal.username)
+                elif nomal.msg['Text'] == '信息无误请录入':
+                    teacher.savemsg()
+                    itchat.send_msg('录入成功',teacher.id)
+        except:
+            ...
+
         try:
             if nomalflag[nomal.username]:
                 itchat.send_msg(jqr(nomal.msg['Text'])+".",nomal.username)

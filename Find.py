@@ -70,7 +70,7 @@ def bkb(user,timec):
         class_time.append(time_1)
         print(time_1)
     data.insert(4, '课时消耗', class_time)
-    data.to_excel('./data/' + filename[-4:] + 'alldream.xlsx', 'w+')
+    data.to_excel('./data/' + user.username[-5:] + '_alldream.xlsx', 'w+')
 
 def getToday(path,flag):
     '''参数是当前目录（今日学生信息的名称）下的文件名称
