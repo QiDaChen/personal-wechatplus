@@ -20,7 +20,19 @@ us_xpath = '//*[@id="teacher_form"]/div[2]/input[1]'
 ps_xpath = '//*[@id="teacher_form"]/div[2]/input[3]'
 yzm_xpath = '//*[@id="teacher_form"]/div[2]/input[4]'
 dl_xpath = '//*[@id="teacher_form"]/input[2]'
+
+def initset():
+    '''新添加好友信息需要同步，
+        保存在data中的admin中
+    '''
+    friends = itchat.get_friends(update=True)[1:]
+    dealData(friends)
 def getnews():
+    '''
+    获取IT之家的热点新闻
+
+    :return: 24h热点文章   168h热点文章
+    '''
     import requests
     from lxml import etree
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36'}
@@ -85,6 +97,7 @@ def dealData(friends):
     dfs = pd.DataFrame(fs).T
     save(dfs)
 def save(dfs):
+    '''存储所有好友信息到本地'''
     with open('./data/好友信息','wb',) as file2:
         pickle.dump(dfs,file2)
 def log_web(ad,yzm):
@@ -147,12 +160,21 @@ def getData(cookies):
     return timec
 class Friends():
     def __init__(self):
+        initset()
         with open('./data/好友信息','rb',) as file2:
             self.df =pickle.load(file2)
     def isvip(self,fromusername):
-        df = self.df[self.df['UserName'] == fromusername]
+        '''对于主机微信的响应选择忽略
+            在admin中有备案的用户是vip权限《傲梦教师》
+            普通永用户都是nomal
+        '''
+        try:
+            name = self.df[self.df['UserName'] == fromusername].index[0]
+        except:
+            flag = '主机微信'
+            name = '两岸猿声啼不住'
         flag = False
-        if df.index[0] in [x[:-3] for x in message]:
+        if name in [x[:-3] for x in message]:
             flag = True
         return flag
 
@@ -178,9 +200,8 @@ class Teacher():
     def svtime(self,timec):
         self.timec = timec
 
-
-
 class Nomal():
+    '''只要是主机微信的好友都是此类'''
     def __init__(self,username):
         self.flag = False
         self.username = username
@@ -230,7 +251,9 @@ def text(msg):
     '''
     #print(friend.df)
     fromusername = msg['FromUserName']
-    if friend.isvip(fromusername):
+    if friend.isvip(fromusername) == '主机微信':
+        ...
+    elif friend.isvip(fromusername):
         user = Teacher(fromusername)
         user.msg_1 = msg
         if user.msg_1['Text'] in ['start','开始']:
@@ -320,7 +343,8 @@ def text(msg):
             global teacher
             teacher = newTeacher(nomal)
             itchat.send_msg('{}你好，现在需要录入你的傲梦网站的账号密码，请严格按照以下格式发送账号和密码（用一个空格隔开,前后不要加空格）如：”19091956102 12345“'.format(teacher.name),nomal.username)
-
+        elif nomal.msg['Text'] == '初始化':
+            initset()
         try:
             if nomal.username == teacher.id:
                 print(nomal.msg['Text'])
