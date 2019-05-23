@@ -20,7 +20,7 @@ def jqr(info):
     try:
         result = r['text']+r['url']
     except KeyError:
-        result = r['text']+'\n'
+        result = r['text']
     try:
         ls = r['list']
         for i in ls[:5]:
