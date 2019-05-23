@@ -9,10 +9,11 @@ import os
 import pickle
 import pandas as pd
 from Find import *
-from turling import jqr
+from turling import *
 import itchat
 from Find import *
 message = readsth()
+fsflag = {}
 msg_to_u = ['你好呀！现在开启微信机器人啦\n你可以获取数据','正在进入网页\n你可能需要根据图片输入验证码','正在获取cookies请稍等',' 已成功获取到cookies，\n接下来我要把所有的数据进行抓取','数据已经被我们完美的爬取下来\n接下来我们可以对数据进行一个查看或者操作\n今日课程计划\n某某同学的课堂反馈\n备课表的在线生成','\n  今日热点','  今日热点\n','     早安\n','    晚安','很抱歉，未找到任何关于这个学生的历史课堂，请检查学生姓名是否输入错误']
 driver = ''
 pic_xpth = '//*[@id="teacher_form"]/div[2]/div/img'
@@ -21,9 +22,12 @@ ps_xpath = '//*[@id="teacher_form"]/div[2]/input[3]'
 yzm_xpath = '//*[@id="teacher_form"]/div[2]/input[4]'
 dl_xpath = '//*[@id="teacher_form"]/input[2]'
 
-def initset():
-    friends = itchat.get_friends(update=True)[1:]
+def initset(friends):
+    global fsflag
     dealData(friends)
+    for i in friends:
+        fsflag[i['UserName']] = {'tuling':False,'duniang':False}
+    return fsflag
 def getnews():
     '''
     获取IT之家的热点新闻
@@ -77,7 +81,6 @@ def getimg(img_time):
         return True
     else:
         return False
-
 
 def dealData(friends):
     '''
@@ -155,6 +158,8 @@ def getData(cookies):
     with open('./data/'+timec+'/已完成课程','wb',) as file2:
         pickle.dump(df,file2)
     return timec
+
+#生成了所有权限关闭的权限
 class Friends():
     def __init__(self):
         with open('./data/好友信息','rb',) as file2:
@@ -206,7 +211,7 @@ def logdata(user):
     timec = getData(user.cookies)
     itchat.send_msg(msg_to_u[4], user.username)
     return timec
-fsflag = {}
+
 class newTeacher():
     def __init__(self,user):
         self.id = user.username
@@ -232,7 +237,6 @@ class newTeacher():
         with open('./data/admin','wb') as file:
             pickle.dump(a,file)
             print('信息录入成功')
-
 @itchat.msg_register(itchat.content.TEXT)
 def text(msg):
     global fsflag,timec,message
@@ -244,91 +248,103 @@ def text(msg):
     '''
     #print(friend.df)
     fromusername = msg['FromUserName']
-    try:
-        print(fsflag[fromusername])
-    except:
-        fsflag[fromusername] = False
-    if friend.isvip(fromusername) == '主机微信':
-        del fsflag[fromusername]
-        ...
+    #此处可以增加管理员微信
+    if msg['Text']=='初始化~':
+        friends = itchat.get_friends(update=True)[1:]
+        fsflag = initset(friends)
+        return '初始化成功'
+    #图灵机器人模式
     elif msg['Text'] in ['开始','start']:
-        fsflag[fromusername] = 'True'
-        itchat.send_msg('ok~ next begin chat with Small~ Q',fromusername)
-    elif fsflag[fromusername]:
-        itchat.send_msg(jqr(msg['Text']) + ".", fromusername)
-        if msg['Text'] in ['退出','exit']:
-            fsflag[fromusername] = False
-    elif friend.isvip(fromusername):
-        user = Teacher(fromusername)
-        user.msg_1 = msg
-        if user.msg_1['Text'] == '获取数据':
-            itchat.send_msg('请耐心等候，小爬虫正在快吗加鞭获取数据', user.username)
-            shot_tm = user.getcookies()
-            itchat.send_msg(msg_to_u[1],user.username)
-            itchat.send_image('.\image\{}1.png'.format(shot_tm),user.username)
-        elif user.msg_1['Text'] in ['help', '帮助']:
-            itchat.send_image('./image/teacher.png',user.username)
-        elif re.findall('\d+',user.msg_1['Text']):
-            if len(re.findall('\d+',user.msg_1['Text'])[0])==4:
-                user.yzm = re.findall('\d+',user.msg_1['Text'])[0]
-                suss,user.cookies = log_web(user.admin,user.yzm)
-                if suss:
-                    timec = logdata(user)
-                    bkb(user, timec)
-                else:
-                    itchat.send_msg('so sad~ 验证码输入错误，请重新获取数据', user.username)
-                    driver.close()
-
-
-        elif user.msg_1['Text'] in '近日课程计划':
-            print(timec)
-            user.closetoday = getToday(timec,True)
-            itchat.send_msg(user.name[:-4]+user.closetoday,user.username)
-
-        elif user.msg_1['Text'] in '今日课程计划':
-            print(timec)
-            user.today = getToday(timec,False)
-            itchat.send_msg(user.name[:-4]+user.today,user.username)
-        elif user.msg_1['Text'][-4:]=='课堂反馈':
-            ms = getfk(user.msg_1['Text'][:-4],timec)
-            print(user.msg_1['Text'][:-4])
-            if len(ms)>=1:
-                itchat.send_msg('已为您匹配到{}个结果'.format(len(ms)),user.username)
-                for ms_1 in ms:
-                    itchat.send_msg(ms_1,user.username)
+        fsflag[fromusername]['tuling'] = 'True'
+        itchat.send_msg('ok~ next begin chat with Small~ Q from tu ling',fromusername)
+    elif fromusername in fsflag:
+        if fsflag[fromusername]['tuling']:
+            if msg['Text'] in ['退出','exit']:
+                fsflag[fromusername]['tuling'] = False
+                return 'maybe! this the time leave u .Qqz'
             else:
-                itchat.send_msg(msg_to_u[-1],user.username)
-            for msg in ms:
-                itchat.send_msg(ms,user.username)
-        elif user.msg_1['Text'] == '热点':
+                return jqr(msg['Text']) + "."
+        elif fsflag[fromusername]['duniang']:
+            if msg['Text'] == '退出百度':
+                fsflag[fromusername]['duniang'] = False
+                return 'see you my baby'
+            else:
+                return baidu(msg['Text']) + "."
+        #度娘模式
+        elif msg['Text'] in ['度娘','百度一下']:
+            fsflag[fromusername]['duniang'] = 'True'
+            itchat.send_msg('ok~ next begin chat with Small~ Q and baidu zhidao',fromusername)
+        elif msg['Text'] == '热点':
             day,week = getnews()
             print(day,'\n',week)
-            itchat.send_msg(day, user.username)
-            itchat.send_msg(week, user.username)
-        elif '备课表' in user.msg_1['Text']:
-            itchat.send_file('./data/' +user.username[-5:]+ '_alldream.xlsx',user.username)
-    else:
-        nomal = Nomal(msg['FromUserName'])
-        print('创建聊天')
-        nomal.msg = msg
-        if nomal.msg['Text'] in ['help','帮助']:
-            itchat.send_image('./image/nomal.png',nomal.username)
-        elif nomal.msg['Text'] == '注册傲梦讲师':
-            global teacher
-            teacher = newTeacher(nomal)
-            itchat.send_msg('{}你好，现在需要录入你的傲梦网站的账号密码，请严格按照以下格式发送账号和密码（用一个空格隔开,前后不要加空格）如：”19091956102 12345“'.format(teacher.name),nomal.username)
-        elif nomal.msg['Text'] == '初始化':
-            initset()
-        try:
-            if nomal.username == teacher.id:
-                print(nomal.msg['Text'])
-                if len(nomal.msg['Text'].split(' '))==2 and len(nomal.msg['Text'].split(' ')[0])==11:
-                    print(nomal.msg['Text'].split(' ')[0])
-                    teacher.admin = nomal.msg['Text'].split(' ')[0]
-                    teacher.password = nomal.msg['Text'].split(' ')[1]
-                    itchat.send_msg('你确认账号密码无误？有误的话请重新注册无误请回复：信息无误请录入',nomal.username)
-                elif nomal.msg['Text'] == '信息无误请录入':
-                    teacher.savemsg()
-                    itchat.send_msg('录入成功',teacher.id)
-        except:
-            ...
+            itchat.send_msg(day, fromusername)
+            itchat.send_msg(week, fromusername)
+
+        elif friend.isvip(fromusername):
+            user = Teacher(fromusername)
+            user.msg_1 = msg
+            if user.msg_1['Text'] == '获取数据':
+                itchat.send_msg('请耐心等候，小爬虫正在快吗加鞭获取数据', user.username)
+                shot_tm = user.getcookies()
+                itchat.send_msg(msg_to_u[1],user.username)
+                itchat.send_image('.\image\{}1.png'.format(shot_tm),user.username)
+            elif user.msg_1['Text'] in ['help', '帮助']:
+                itchat.send_image('./image/teacher.png',user.username)
+            elif re.findall('\d+',user.msg_1['Text']):
+                if len(re.findall('\d+',user.msg_1['Text'])[0])==4:
+                    user.yzm = re.findall('\d+',user.msg_1['Text'])[0]
+                    suss,user.cookies = log_web(user.admin,user.yzm)
+                    if suss:
+                        timec = logdata(user)
+                        bkb(user, timec)
+                    else:
+                        itchat.send_msg('so sad~ 验证码输入错误，请重新获取数据', user.username)
+                        driver.close()
+            elif user.msg_1['Text'] in '近日课程计划':
+                print(timec)
+                user.closetoday = getToday(timec,True)
+                itchat.send_msg(user.name[:-4]+user.closetoday,user.username)
+
+            elif user.msg_1['Text'] in '今日课程计划':
+                print(timec)
+                user.today = getToday(timec,False)
+                itchat.send_msg(user.name[:-4]+user.today,user.username)
+            elif user.msg_1['Text'][-4:]=='课堂反馈':
+                ms = getfk(user.msg_1['Text'][:-4],timec)
+                print(user.msg_1['Text'][:-4])
+                if len(ms)>=1:
+                    itchat.send_msg('已为您匹配到{}个结果'.format(len(ms)),user.username)
+                    for ms_1 in ms:
+                        itchat.send_msg(ms_1,user.username)
+                else:
+                    itchat.send_msg(msg_to_u[-1],user.username)
+                for msg in ms:
+                    itchat.send_msg(ms,user.username)
+
+            elif '备课表' in user.msg_1['Text']:
+                itchat.send_file('./data/' +user.username[-5:]+ '_alldream.xlsx',user.username)
+        else:
+            nomal = Nomal(msg['FromUserName'])
+            print('创建聊天')
+            nomal.msg = msg
+            if nomal.msg['Text'] in ['help','帮助']:
+                itchat.send_image('./image/nomal.png',nomal.username)
+            if nomal.msg['Text'] == '注册傲梦讲师':
+                global teacher
+                teacher = newTeacher(nomal)
+                itchat.send_msg('{}你好，现在需要录入你的傲梦网站的账号密码，请严格按照以下格式发送账号和密码（用一个空格隔开,前后不要加空格）如：”19091956102 12345“'.format(teacher.name),nomal.username)
+            elif nomal.msg['Text'] == '初始化':
+                initset()
+            try:
+                if nomal.username == teacher.id:
+                    print(nomal.msg['Text'])
+                    if len(nomal.msg['Text'].split(' '))==2 and len(nomal.msg['Text'].split(' ')[0])==11:
+                        print(nomal.msg['Text'].split(' ')[0])
+                        teacher.admin = nomal.msg['Text'].split(' ')[0]
+                        teacher.password = nomal.msg['Text'].split(' ')[1]
+                        itchat.send_msg('你确认账号密码无误？有误的话请重新注册无误请回复：信息无误请录入',nomal.username)
+                    elif nomal.msg['Text'] == '信息无误请录入':
+                        teacher.savemsg()
+                        itchat.send_msg('录入成功',teacher.id)
+            except:
+                ...

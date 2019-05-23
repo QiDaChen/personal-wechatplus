@@ -8,6 +8,7 @@ def main():
     itchat.auto_login(hotReload=True ) 
     friends = itchat.get_friends(update=True)[1:]    
     dealData(friends)
+    initset(friends)
     itchat.run()    
 if __name__ == "__main__":
     main()

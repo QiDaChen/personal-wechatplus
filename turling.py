@@ -43,8 +43,5 @@ def jqr(info):
             result+='\n'
     except KeyError:
         pass
-    if result != '亲爱的，当天请求次数已用完。':
-        return result
-    else:
-        return baidu(info)
+    return result
 # print(jqr('qinaide'))
