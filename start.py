@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def main():  
-    itchat.auto_login(hotReload=True ) 
+    itchat.auto_login(hotReload=True,enableCmdQR=2) 
     friends = itchat.get_friends(update=True)[1:]    
     dealData(friends)
     initset(friends)
