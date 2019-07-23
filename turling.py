@@ -24,7 +24,7 @@ def baidu(info):
 def jqr(info):
     apiUrl = 'http://www.tuling123.com/openapi/api'
     data = {
-        'key'    : '2a4403884f5f4244ac35396a93d41bba','info'   : info,'userid' : '陈小奇',#
+        'key'    : 'ad0c5d0594ce42f1b5c7a8547eb947e4','info'   : info,'userid' : '陈小奇',#
     }
     # 我们通过如下命令发送一个post请求
     r = requests.post(apiUrl, data=data).json()
