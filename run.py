@@ -12,6 +12,7 @@ from Find import *
 from turling import *
 import itchat
 from Find import *
+from ctrip import *
 message = readsth()
 fsflag = {}
 msg_to_u = ['你好呀！现在开启微信机器人啦\n你可以获取数据','正在进入网页\n你可能需要根据图片输入验证码','正在获取cookies请稍等',' 已成功获取到cookies，\n接下来我要把所有的数据进行抓取','数据已经被我们完美的爬取下来\n接下来我们可以对数据进行一个查看或者操作\n今日课程计划\n某某同学的课堂反馈\n备课表的在线生成','\n  今日热点','  今日热点\n','     早安\n','    晚安','很抱歉，未找到任何关于这个学生的历史课堂，请检查学生姓名是否输入错误']
@@ -253,6 +254,8 @@ def text(msg):
         friends = itchat.get_friends(update=True)[1:]
         fsflag = initset(friends)
         return '初始化成功'
+    elif '低价机票' in msg["Text"]:
+        return getLowerAir(msg["Text"].replace('的低价机票',''))
     #图灵机器人模式
     elif msg['Text'] in ['开始','start']:
         fsflag[fromusername]['tuling'] = 'True'
