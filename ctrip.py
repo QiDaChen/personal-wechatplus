@@ -46,4 +46,4 @@ def getLowerAir(words):
         return getlowerprice(resultcity)
     else:
         return "您输入的城市太凶了，我都没有找到~"
-
+getLowerAir("西安到长沙")
